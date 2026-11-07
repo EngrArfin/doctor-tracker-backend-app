@@ -1,31 +1,22 @@
-const dns = require('dns');
+import 'reflect-metadata';
+import * as dns from 'dns';
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch (e) {}
+} catch {}
 
-const { NestFactory } = require('@nestjs/core');
-const { ExpressAdapter } = require('@nestjs/platform-express');
-const express = require('express');
-const { ValidationPipe } = require('@nestjs/common');
-const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
-const path = require('path');
+import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express, { Express, Request, Response } from 'express';
+import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from '../src/app.module';
+import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
 
-let cachedServer;
+let cachedServer: Express;
 
-async function bootstrapServer() {
+async function bootstrap(): Promise<Express> {
   const expressApp = express();
-
-  // Dynamically resolve dist/app.module
-  const distPath = path.resolve(__dirname, '../dist');
-  const { AppModule, ObserveInstrument } = require(path.join(distPath, 'app.module'));
-  const { AllExceptionsFilter } = require(path.join(distPath, 'common/filters/http-exception.filter'));
-
-  const options = {};
-  if (ObserveInstrument && process.env.OBSERVE_APP_KEY) {
-    options.instrument = ObserveInstrument;
-  }
-
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), options);
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
   app.enableCors({
     origin: true,
@@ -92,20 +83,21 @@ async function bootstrapServer() {
   return expressApp;
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req: Request, res: Response) {
   try {
     if (!cachedServer) {
-      cachedServer = await bootstrapServer();
+      cachedServer = await bootstrap();
     }
     return cachedServer(req, res);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Serverless Handler Error:', err);
-    res.status(500).json({
+    return res.status(500).json({
       statusCode: 500,
       success: false,
       message: 'Serverless Handler Initialization Error',
-      error: err.message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+      error: err?.message || String(err),
+      stack: err?.stack,
     });
   }
-};
+}
+

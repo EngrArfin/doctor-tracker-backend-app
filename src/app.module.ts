@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { createObserveModule } from '@nestjs/observe';
@@ -12,38 +12,49 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const uri =
-          configService.get<string>('DATABASE_URL') ||
-          'mongodb+srv://doctorTracker:doctorTracker123@cluster0.xu7sm0d.mongodb.net/doctorTracker?retryWrites=true&w=majority';
-        return {
-          uri,
-          dbName: 'doctorTracker',
-          serverSelectionTimeoutMS: 5000,
-          connectTimeoutMS: 5000,
-        };
-      },
-      inject: [ConfigService],
-    }),
+const appImports: (any | DynamicModule)[] = [
+  ConfigModule.forRoot({
+    isGlobal: true,
+    envFilePath: '.env',
+  }),
+  MongooseModule.forRootAsync({
+    imports: [ConfigModule],
+    useFactory: (configService: ConfigService) => {
+      const uri =
+        configService.get<string>('DATABASE_URL') ||
+        'mongodb+srv://doctorTracker:doctorTracker123@cluster0.xu7sm0d.mongodb.net/doctorTracker?retryWrites=true&w=majority';
+      return {
+        uri,
+        dbName: 'doctorTracker',
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+      };
+    },
+    inject: [ConfigService],
+  }),
+  UserModule,
+  AuthModule,
+  DoctorModule,
+  PatientModule,
+  DashboardModule,
+];
+
+if (
+  process.env.OBSERVE_APP_KEY &&
+  process.env.OBSERVE_APP_KEY !== 'YOUR_APP_KEY' &&
+  !process.env.VERCEL
+) {
+  appImports.push(
     ObserveModule.forRoot({
-      appKey: process.env.OBSERVE_APP_KEY ?? 'YOUR_APP_KEY',
+      appKey: process.env.OBSERVE_APP_KEY,
       appSecret: process.env.OBSERVE_APP_SECRET ?? 'YOUR_APP_SECRET',
       serviceId: 'doctor-tracker-backend-app',
     }),
-    UserModule,
-    AuthModule,
-    DoctorModule,
-    PatientModule,
-    DashboardModule,
-  ],
+  );
+}
+
+@Module({
+  imports: appImports,
   controllers: [AppController],
   providers: [AppService],
 })
