@@ -1,6 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import * as pg from 'pg';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -30,6 +31,7 @@ const appImports: (any | DynamicModule)[] = [
       return {
         type: 'postgres',
         url,
+        driver: pg,
         ssl: {
           rejectUnauthorized: false,
         },
