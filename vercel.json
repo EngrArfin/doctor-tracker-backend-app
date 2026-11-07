@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "framework": null,
   "buildCommand": "npm run build",
   "functions": {
     "api/index.js": {
@@ -10,7 +11,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api"
+      "destination": "/api/index"
     }
   ]
 }
