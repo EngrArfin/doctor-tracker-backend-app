@@ -1,21 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Doctor, DoctorDocument } from '../doctor/schemas/doctor.schema';
-import { Patient, PatientDocument } from '../patient/schemas/patient.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Doctor } from '../doctor/entities/doctor.entity';
+import { Patient } from '../patient/entities/patient.entity';
 
 @Injectable()
 export class DashboardService {
   constructor(
-    @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
-    @InjectModel(Patient.name) private patientModel: Model<PatientDocument>,
+    @InjectRepository(Doctor)
+    private readonly doctorRepository: Repository<Doctor>,
+    @InjectRepository(Patient)
+    private readonly patientRepository: Repository<Patient>,
   ) {}
 
   async getStats() {
-    const totalDoctors = await this.doctorModel.countDocuments();
-    const totalPatients = await this.patientModel.countDocuments();
-    const activeDoctors = await this.doctorModel.countDocuments({ status: 'Active' });
-    const criticalPatients = await this.patientModel.countDocuments({ status: 'Critical' });
+    const totalDoctors = await this.doctorRepository.count();
+    const totalPatients = await this.patientRepository.count();
+    const activeDoctors = await this.doctorRepository.count({ where: { status: 'Active' } });
+    const criticalPatients = await this.patientRepository.count({ where: { status: 'Critical' } });
 
     const averagePatientsPerDoctor = totalDoctors > 0 ? Math.round((totalPatients / totalDoctors) * 10) / 10 : 0;
 
@@ -44,4 +46,3 @@ export class DashboardService {
     ];
   }
 }
-

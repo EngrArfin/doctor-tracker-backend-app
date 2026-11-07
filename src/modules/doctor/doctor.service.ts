@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Doctor, DoctorDocument } from './schemas/doctor.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Like } from 'typeorm';
+import { Doctor } from './entities/doctor.entity';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 
 @Injectable()
 export class DoctorService implements OnModuleInit {
   private readonly logger = new Logger(DoctorService.name);
 
-  constructor(@InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>) {}
+  constructor(
+    @InjectRepository(Doctor)
+    private readonly doctorRepository: Repository<Doctor>,
+  ) {}
 
   async onModuleInit() {
     await this.seedInitialDoctors();
@@ -16,7 +19,7 @@ export class DoctorService implements OnModuleInit {
 
   private async seedInitialDoctors() {
     try {
-      const count = await this.doctorModel.countDocuments();
+      const count = await this.doctorRepository.count();
       if (count === 0) {
         const seedData = [
           {
@@ -28,7 +31,7 @@ export class DoctorService implements OnModuleInit {
             avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=256&h=256',
             patientsCount: 42,
             joinedDate: '2023-01-15',
-            status: 'Active',
+            status: 'Active' as const,
             experienceYears: 14,
             rating: 4.9,
             roomNumber: 'West Wing 402',
@@ -45,7 +48,7 @@ export class DoctorService implements OnModuleInit {
             avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=256&h=256',
             patientsCount: 38,
             joinedDate: '2023-03-20',
-            status: 'Active',
+            status: 'Active' as const,
             experienceYears: 12,
             rating: 4.8,
             roomNumber: 'Neuro Block 210',
@@ -62,7 +65,7 @@ export class DoctorService implements OnModuleInit {
             avatarUrl: 'https://images.unsplash.com/photo-1594824813575-2742918803a6?auto=format&fit=crop&q=80&w=256&h=256',
             patientsCount: 56,
             joinedDate: '2022-11-05',
-            status: 'Active',
+            status: 'Active' as const,
             experienceYears: 10,
             rating: 4.9,
             roomNumber: 'Pediatric Pavilion 104',
@@ -71,59 +74,57 @@ export class DoctorService implements OnModuleInit {
             consultationFee: 220,
           },
         ];
-        await this.doctorModel.insertMany(seedData);
-        this.logger.log(`Seeded ${seedData.length} initial clinical doctors`);
+        const doctors = this.doctorRepository.create(seedData);
+        await this.doctorRepository.save(doctors);
+        this.logger.log(`Seeded ${seedData.length} initial clinical doctors in Neon DB`);
       }
     } catch (err: any) {
       this.logger.warn(`Could not seed initial doctors: ${err.message}`);
     }
   }
 
-  async create(createDoctorDto: CreateDoctorDto): Promise<DoctorDocument> {
-    const createdDoctor = new this.doctorModel(createDoctorDto);
-    return createdDoctor.save();
+  async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
+    const doctor = this.doctorRepository.create(createDoctorDto as any);
+    const saved = await this.doctorRepository.save(doctor);
+    return Array.isArray(saved) ? saved[0] : saved;
   }
 
-  async findAll(query?: { search?: string; specialization?: string; status?: string }): Promise<DoctorDocument[]> {
-    const filter: any = {};
+  async findAll(query?: { search?: string; specialization?: string; status?: string }): Promise<Doctor[]> {
+    const qb = this.doctorRepository.createQueryBuilder('doctor');
+
     if (query?.search) {
-      filter.$or = [
-        { name: { $regex: query.search, $options: 'i' } },
-        { email: { $regex: query.search, $options: 'i' } },
-        { hospital: { $regex: query.search, $options: 'i' } },
-      ];
+      qb.andWhere(
+        '(LOWER(doctor.name) LIKE :search OR LOWER(doctor.email) LIKE :search OR LOWER(doctor.hospital) LIKE :search)',
+        { search: `%${query.search.toLowerCase()}%` },
+      );
     }
     if (query?.specialization && query.specialization !== 'all') {
-      filter.specialization = query.specialization;
+      qb.andWhere('doctor.specialization = :specialization', { specialization: query.specialization });
     }
     if (query?.status && query.status !== 'all') {
-      filter.status = query.status;
+      qb.andWhere('doctor.status = :status', { status: query.status });
     }
-    return this.doctorModel.find(filter).sort({ createdAt: -1 }).exec();
+
+    return qb.orderBy('doctor.createdAt', 'DESC').getMany();
   }
 
-  async findById(id: string): Promise<DoctorDocument> {
-    const doctor = await this.doctorModel.findById(id).exec();
+  async findById(id: string): Promise<Doctor> {
+    const doctor = await this.doctorRepository.findOne({ where: { id } });
     if (!doctor) {
       throw new NotFoundException(`Doctor with ID ${id} not found`);
     }
     return doctor;
   }
 
-  async update(id: string, updateDto: Partial<CreateDoctorDto>): Promise<DoctorDocument> {
-    const updated = await this.doctorModel.findByIdAndUpdate(id, updateDto, { new: true }).exec();
-    if (!updated) {
-      throw new NotFoundException(`Doctor with ID ${id} not found`);
-    }
-    return updated;
+  async update(id: string, updateDto: Partial<CreateDoctorDto>): Promise<Doctor> {
+    const doctor = await this.findById(id);
+    Object.assign(doctor, updateDto);
+    return this.doctorRepository.save(doctor);
   }
 
   async remove(id: string): Promise<{ deleted: boolean; message: string }> {
-    const result = await this.doctorModel.findByIdAndDelete(id).exec();
-    if (!result) {
-      throw new NotFoundException(`Doctor with ID ${id} not found`);
-    }
+    const doctor = await this.findById(id);
+    await this.doctorRepository.remove(doctor);
     return { deleted: true, message: `Doctor ${id} successfully removed` };
   }
 }
-

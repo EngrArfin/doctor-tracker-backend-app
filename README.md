@@ -1,6 +1,6 @@
 # Doctor Tracker Backend API
 
-Production-ready NestJS REST API for **Doctor Tracker** — Clinical Administration Dashboard. Built with **NestJS 12**, **MongoDB Atlas (Mongoose)**, **JWT Authentication**, and **Swagger OpenAPI 3.0 Documentation**.
+Production-ready NestJS REST API for **Doctor Tracker** — Clinical Administration Dashboard. Built with **NestJS 12**, **Neon Serverless PostgreSQL (TypeORM)**, **JWT Authentication**, and **Swagger OpenAPI 3.0 Documentation**.
 
 ---
 
@@ -14,7 +14,7 @@ Production-ready NestJS REST API for **Doctor Tracker** — Clinical Administrat
 
 ## 🔐 Default Demo Credentials (Auto-Seeded)
 
-The system automatically initializes and seeds these accounts in MongoDB Atlas upon startup:
+The system automatically initializes and seeds these accounts in Neon DB upon startup:
 
 | Role | Email | Password | Permissions |
 | :--- | :--- | :--- | :--- |

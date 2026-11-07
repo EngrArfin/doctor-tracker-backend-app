@@ -1,14 +1,17 @@
 import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Patient, PatientDocument } from './schemas/patient.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Patient } from './entities/patient.entity';
 import { CreatePatientDto } from './dto/create-patient.dto';
 
 @Injectable()
 export class PatientService implements OnModuleInit {
   private readonly logger = new Logger(PatientService.name);
 
-  constructor(@InjectModel(Patient.name) private patientModel: Model<PatientDocument>) {}
+  constructor(
+    @InjectRepository(Patient)
+    private readonly patientRepository: Repository<Patient>,
+  ) {}
 
   async onModuleInit() {
     await this.seedInitialPatients();
@@ -16,7 +19,7 @@ export class PatientService implements OnModuleInit {
 
   private async seedInitialPatients() {
     try {
-      const count = await this.patientModel.countDocuments();
+      const count = await this.patientRepository.count();
       if (count === 0) {
         const seedData = [
           {
@@ -26,7 +29,7 @@ export class PatientService implements OnModuleInit {
             age: 58,
             gender: 'Male',
             condition: 'Hypertension',
-            status: 'Active',
+            status: 'Active' as const,
             doctorId: 'doc-1',
             doctorName: 'Dr. Sarah Jenkins',
             registeredDate: '2023-08-10',
@@ -42,7 +45,7 @@ export class PatientService implements OnModuleInit {
             age: 42,
             gender: 'Female',
             condition: 'Coronary Artery Disease',
-            status: 'Under Observation',
+            status: 'Under Observation' as const,
             doctorId: 'doc-1',
             doctorName: 'Dr. Sarah Jenkins',
             registeredDate: '2023-09-22',
@@ -58,7 +61,7 @@ export class PatientService implements OnModuleInit {
             age: 35,
             gender: 'Male',
             condition: 'Migraine with Aura',
-            status: 'Active',
+            status: 'Active' as const,
             doctorId: 'doc-2',
             doctorName: 'Dr. Marcus Vance',
             registeredDate: '2023-10-05',
@@ -68,63 +71,60 @@ export class PatientService implements OnModuleInit {
             notes: 'CGRP antagonist started. Headache frequency reduced by 60%.',
           },
         ];
-        await this.patientModel.insertMany(seedData);
-        this.logger.log(`Seeded ${seedData.length} initial clinical patients`);
+        const patients = this.patientRepository.create(seedData);
+        await this.patientRepository.save(patients);
+        this.logger.log(`Seeded ${seedData.length} initial clinical patients in Neon DB`);
       }
     } catch (err: any) {
       this.logger.warn(`Could not seed initial patients: ${err.message}`);
     }
   }
 
-  async create(createPatientDto: CreatePatientDto): Promise<PatientDocument> {
-    const created = new this.patientModel(createPatientDto);
-    return created.save();
+  async create(createPatientDto: CreatePatientDto): Promise<Patient> {
+    const patient = this.patientRepository.create(createPatientDto as any);
+    const saved = await this.patientRepository.save(patient);
+    return Array.isArray(saved) ? saved[0] : saved;
   }
 
-  async findAll(query?: { search?: string; condition?: string; doctorId?: string; status?: string }): Promise<PatientDocument[]> {
-    const filter: any = {};
+  async findAll(query?: { search?: string; condition?: string; doctorId?: string; status?: string }): Promise<Patient[]> {
+    const qb = this.patientRepository.createQueryBuilder('patient');
+
     if (query?.search) {
-      filter.$or = [
-        { name: { $regex: query.search, $options: 'i' } },
-        { email: { $regex: query.search, $options: 'i' } },
-        { condition: { $regex: query.search, $options: 'i' } },
-        { doctorName: { $regex: query.search, $options: 'i' } },
-      ];
+      qb.andWhere(
+        '(LOWER(patient.name) LIKE :search OR LOWER(patient.email) LIKE :search OR LOWER(patient.condition) LIKE :search OR LOWER(patient.doctorName) LIKE :search)',
+        { search: `%${query.search.toLowerCase()}%` },
+      );
     }
     if (query?.condition && query.condition !== 'all') {
-      filter.condition = query.condition;
+      qb.andWhere('patient.condition = :condition', { condition: query.condition });
     }
     if (query?.doctorId && query.doctorId !== 'all') {
-      filter.doctorId = query.doctorId;
+      qb.andWhere('patient.doctorId = :doctorId', { doctorId: query.doctorId });
     }
     if (query?.status && query.status !== 'all') {
-      filter.status = query.status;
+      qb.andWhere('patient.status = :status', { status: query.status });
     }
-    return this.patientModel.find(filter).sort({ createdAt: -1 }).exec();
+
+    return qb.orderBy('patient.createdAt', 'DESC').getMany();
   }
 
-  async findById(id: string): Promise<PatientDocument> {
-    const patient = await this.patientModel.findById(id).exec();
+  async findById(id: string): Promise<Patient> {
+    const patient = await this.patientRepository.findOne({ where: { id } });
     if (!patient) {
       throw new NotFoundException(`Patient with ID ${id} not found`);
     }
     return patient;
   }
 
-  async update(id: string, updateDto: Partial<CreatePatientDto>): Promise<PatientDocument> {
-    const updated = await this.patientModel.findByIdAndUpdate(id, updateDto, { new: true }).exec();
-    if (!updated) {
-      throw new NotFoundException(`Patient with ID ${id} not found`);
-    }
-    return updated;
+  async update(id: string, updateDto: Partial<CreatePatientDto>): Promise<Patient> {
+    const patient = await this.findById(id);
+    Object.assign(patient, updateDto);
+    return this.patientRepository.save(patient);
   }
 
   async remove(id: string): Promise<{ deleted: boolean; message: string }> {
-    const result = await this.patientModel.findByIdAndDelete(id).exec();
-    if (!result) {
-      throw new NotFoundException(`Patient with ID ${id} not found`);
-    }
+    const patient = await this.findById(id);
+    await this.patientRepository.remove(patient);
     return { deleted: true, message: `Patient ${id} successfully removed` };
   }
 }
-
