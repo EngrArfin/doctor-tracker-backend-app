@@ -15,10 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return health check object', () => {
-      const result = appController.getHealth();
-      expect(result.success).toBe(true);
-      expect(result.docs).toBe('/api/docs');
+    it('should return welcome message', () => {
+      expect(appController.getHello()).toBe('Hello! Welcome to Doctor Tracker Backend API');
     });
   });
 });
