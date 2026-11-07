@@ -8,16 +8,24 @@ const { ExpressAdapter } = require('@nestjs/platform-express');
 const express = require('express');
 const { ValidationPipe } = require('@nestjs/common');
 const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
-const { AppModule, ObserveInstrument } = require('../dist/app.module');
-const { AllExceptionsFilter } = require('../dist/common/filters/http-exception.filter');
+const path = require('path');
 
 let cachedServer;
 
 async function bootstrapServer() {
   const expressApp = express();
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
-    instrument: ObserveInstrument,
-  });
+
+  // Dynamically resolve dist/app.module
+  const distPath = path.resolve(__dirname, '../dist');
+  const { AppModule, ObserveInstrument } = require(path.join(distPath, 'app.module'));
+  const { AllExceptionsFilter } = require(path.join(distPath, 'common/filters/http-exception.filter'));
+
+  const options = {};
+  if (ObserveInstrument && process.env.OBSERVE_APP_KEY) {
+    options.instrument = ObserveInstrument;
+  }
+
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), options);
 
   app.enableCors({
     origin: true,
@@ -85,9 +93,19 @@ async function bootstrapServer() {
 }
 
 module.exports = async (req, res) => {
-  if (!cachedServer) {
-    cachedServer = await bootstrapServer();
+  try {
+    if (!cachedServer) {
+      cachedServer = await bootstrapServer();
+    }
+    return cachedServer(req, res);
+  } catch (err) {
+    console.error('Serverless Handler Error:', err);
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: 'Serverless Handler Initialization Error',
+      error: err.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+    });
   }
-  return cachedServer(req, res);
 };
-

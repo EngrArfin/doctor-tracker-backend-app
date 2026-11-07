@@ -27,6 +27,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         return {
           uri,
           dbName: 'doctorTracker',
+          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 5000,
         };
       },
       inject: [ConfigService],

@@ -1,6 +1,12 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "dist/**",
+      "maxDuration": 15
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
@@ -8,4 +14,3 @@
     }
   ]
 }
-
