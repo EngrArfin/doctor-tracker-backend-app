@@ -1,15 +1,14 @@
-const express = require('express');
+import express from 'express';
+import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from '../dist/app.module.js';
+import { AllExceptionsFilter } from '../dist/common/filters/http-exception.filter.js';
 
 let cachedServer;
 
 async function bootstrapServer() {
-  const { NestFactory } = await import('@nestjs/core');
-  const { ExpressAdapter } = await import('@nestjs/platform-express');
-  const { ValidationPipe } = await import('@nestjs/common');
-  const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
-  const { AppModule } = await import('../dist/app.module.js');
-  const { AllExceptionsFilter } = await import('../dist/common/filters/http-exception.filter.js');
-
   const expressApp = express();
   const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
@@ -78,17 +77,7 @@ async function bootstrapServer() {
   return expressApp;
 }
 
-module.exports = async (req, res) => {
-  if (req.url === '/debug' || req.url === '/api/debug') {
-    return res.status(200).json({
-      status: 'ok',
-      nodeVersion: process.version,
-      execArgv: process.execArgv,
-      nodeOptions: process.env.NODE_OPTIONS,
-      vercelEnv: process.env.VERCEL_ENV,
-    });
-  }
-
+export default async function handler(req, res) {
   try {
     if (!cachedServer) {
       cachedServer = await bootstrapServer();
@@ -104,4 +93,4 @@ module.exports = async (req, res) => {
       stack: err?.stack,
     });
   }
-};
+}

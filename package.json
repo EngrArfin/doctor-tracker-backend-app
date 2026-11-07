@@ -5,12 +5,13 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "type": "module",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "nest build && tsc-esm-fix --target=dist",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -70,6 +71,7 @@
     "ts-jest": "^29.4.0",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
+    "tsc-esm-fix": "^3.1.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.2"
   }
