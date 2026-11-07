@@ -1,20 +1,15 @@
-import 'reflect-metadata';
-import * as dns from 'dns';
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch {}
+const express = require('express');
 
-import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import express, { Express, Request, Response } from 'express';
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from '../src/app.module';
-import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
+let cachedServer;
 
-let cachedServer: Express;
+async function bootstrapServer() {
+  const { NestFactory } = await import('@nestjs/core');
+  const { ExpressAdapter } = await import('@nestjs/platform-express');
+  const { ValidationPipe } = await import('@nestjs/common');
+  const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
+  const { AppModule } = await import('../dist/app.module.js');
+  const { AllExceptionsFilter } = await import('../dist/common/filters/http-exception.filter.js');
 
-async function bootstrap(): Promise<Express> {
   const expressApp = express();
   const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
@@ -83,14 +78,14 @@ async function bootstrap(): Promise<Express> {
   return expressApp;
 }
 
-export default async function handler(req: Request, res: Response) {
+module.exports = async (req, res) => {
   try {
     if (!cachedServer) {
-      cachedServer = await bootstrap();
+      cachedServer = await bootstrapServer();
     }
     return cachedServer(req, res);
-  } catch (err: any) {
-    console.error('Serverless Handler Error:', err);
+  } catch (err) {
+    console.error('Serverless Execution Error:', err);
     return res.status(500).json({
       statusCode: 500,
       success: false,
@@ -99,5 +94,4 @@ export default async function handler(req: Request, res: Response) {
       stack: err?.stack,
     });
   }
-}
-
+};
