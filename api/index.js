@@ -79,6 +79,16 @@ async function bootstrapServer() {
 }
 
 module.exports = async (req, res) => {
+  if (req.url === '/debug' || req.url === '/api/debug') {
+    return res.status(200).json({
+      status: 'ok',
+      nodeVersion: process.version,
+      execArgv: process.execArgv,
+      nodeOptions: process.env.NODE_OPTIONS,
+      vercelEnv: process.env.VERCEL_ENV,
+    });
+  }
+
   try {
     if (!cachedServer) {
       cachedServer = await bootstrapServer();
