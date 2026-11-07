@@ -1,3 +1,11 @@
+import * as dns from 'dns';
+// Resolve MongoDB Atlas SRV records reliably on Windows/ISP networks
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch {
+  // fallback to system default
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -34,8 +42,8 @@ async function bootstrap() {
     .setTitle('Doctor Tracker API')
     .setDescription(
       'Comprehensive RESTful Healthcare Management API for Doctor Tracker. ' +
-        'Engineered for hospital administrators and clinical staff to manage physicians, ' +
-        'track patient caseloads, and access clinical telemetry analytics with JWT authentication.',
+      'Engineered for hospital administrators and clinical staff to manage physicians, ' +
+      'track patient caseloads, and access clinical telemetry analytics with JWT authentication.',
     )
     .setVersion('1.0.0')
     .addTag('Auth', 'Authentication, JWT issuance, profile, and session management')
