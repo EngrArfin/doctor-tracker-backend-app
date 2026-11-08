@@ -17,11 +17,11 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { PatientService } from './patient.service';
-import { CreatePatientDto } from './dto/create-patient.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { PatientService } from './patient.service.js';
+import { CreatePatientDto } from './dto/create-patient.dto.js';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { Roles } from '../../common/decorators/roles.decorator.js';
 
 @ApiTags('Patients')
 @Controller('patients')

@@ -5,10 +5,10 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { UserRole } from '../user/entities/user.entity';
+import { UserService } from '../user/user.service.js';
+import { LoginDto } from './dto/login.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { UserRole } from '../user/entities/user.entity.js';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()

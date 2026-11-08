@@ -3,16 +3,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as pg from 'pg';
 import { createObserveModule } from '@nestjs/observe';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { User } from './modules/user/entities/user.entity';
-import { Doctor } from './modules/doctor/entities/doctor.entity';
-import { Patient } from './modules/patient/entities/patient.entity';
-import { UserModule } from './modules/user/user.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { DoctorModule } from './modules/doctor/doctor.module';
-import { PatientModule } from './modules/patient/patient.module';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { User } from './modules/user/entities/user.entity.js';
+import { Doctor } from './modules/doctor/entities/doctor.entity.js';
+import { Patient } from './modules/patient/entities/patient.entity.js';
+import { UserModule } from './modules/user/user.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { DoctorModule } from './modules/doctor/doctor.module.js';
+import { PatientModule } from './modules/patient/patient.module.js';
+import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
