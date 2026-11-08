@@ -45,4 +45,50 @@ export class DashboardService {
       { month: 'Feb', patients: 52, admissions: 30 },
     ];
   }
+
+  async getPatientsPerDoctor() {
+    const doctors = await this.doctorRepository.find();
+    const patients = await this.patientRepository.find();
+
+    return doctors.map((doc) => {
+      const assignedCount = patients.filter((p) => p.doctorId === doc.id).length;
+      return {
+        doctorName: doc.name.replace('Dr. ', ''),
+        patientCount: doc.patientsCount + assignedCount,
+        specialization: doc.specialization,
+      };
+    });
+  }
+
+  async getSpecializations() {
+    const doctors = await this.doctorRepository.find();
+    const counts: Record<string, number> = {};
+    doctors.forEach((d) => {
+      counts[d.specialization] = (counts[d.specialization] || 0) + 1;
+    });
+
+    const colors = [
+      '#2563EB', '#0D9488', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#10B981', '#6366F1', '#14B8A6'
+    ];
+
+    const keys = Object.keys(counts);
+    const total = doctors.length || 1;
+
+    return keys.map((spec, idx) => ({
+      name: spec,
+      value: counts[spec],
+      percentage: Number(((counts[spec] / total) * 100).toFixed(1)),
+      color: colors[idx % colors.length],
+    }));
+  }
+
+  async resetData() {
+    await this.patientRepository.delete({});
+    await this.doctorRepository.delete({});
+
+    return {
+      message: 'All records cleared. Baseline records will automatically reseed on next request.',
+    };
+  }
 }

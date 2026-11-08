@@ -75,6 +75,18 @@ export class DoctorController {
     };
   }
 
+  @Get(':id/patients')
+  @ApiOperation({ summary: 'Get all patients assigned to a specific doctor' })
+  async getDoctorPatients(@Param('id') id: string) {
+    const patients = await this.doctorService.getPatientsByDoctorId(id);
+    return {
+      statusCode: HttpStatus.OK,
+      success: true,
+      message: 'Patients retrieved successfully',
+      data: patients,
+    };
+  }
+
   @Put(':id')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, RolesGuard)
