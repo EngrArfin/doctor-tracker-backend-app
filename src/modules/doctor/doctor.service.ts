@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Doctor } from './entities/doctor.entity';
-import { Patient } from '../patient/entities/patient.entity';
-import { CreateDoctorDto } from './dto/create-doctor.dto';
+import { Doctor } from './entities/doctor.entity.js';
+import { Patient } from '../patient/entities/patient.entity.js';
+import { CreateDoctorDto } from './dto/create-doctor.dto.js';
 
 @Injectable()
 export class DoctorService implements OnModuleInit {

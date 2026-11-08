@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { UserRole } from '../entities/user.entity';
+import { UserRole } from '../entities/user.entity.js';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'Dr. Sarah Jenkins' })
